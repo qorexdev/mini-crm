@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini CRM - Лиды и Заявки</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+
+        (function() {
+            try {
+                const isDark = localStorage.getItem('mini-crm-dark-mode') === 'true';
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {}
+        })();
+
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                fontFamily: {
+                    sans: ['Inter', 'sans-serif'],
+                    mono: ['JetBrains Mono', 'monospace'],
+                },
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    animation: {
+                        'spin-slow': 'spin 3s linear infinite',
+                        'bounce-slight': 'bounce 1s ease-in-out infinite',
+                        'slideDown': 'slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                        'slideUp': 'slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                    },
+                    keyframes: {
+                        slideDown: {
+                            '0%': { opacity: '0', transform: 'translateY(-8px)', maxHeight: '0' },
+                            '100%': { opacity: '1', transform: 'translateY(0)', maxHeight: '300px' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '1', transform: 'translateY(0)', maxHeight: '300px' },
+                            '100%': { opacity: '0', transform: 'translateY(-8px)', maxHeight: '0' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .preload * { transition: none !important; }
+
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #64748b; }
+
+        @media (max-width: 768px) {
+
+            .mobile-table thead { display: none; }
+            .mobile-table tbody { display: flex; flex-direction: column; gap: 1rem; padding: 0.5rem; }
+            .mobile-table tr {
+                display: block;
+                position: relative;
+                background-color: white;
+                border-radius: 1rem;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                border: 1px solid #e2e8f0;
+                overflow: hidden;
+                padding: 1.25rem;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .dark .mobile-table tr {
+                background-color: #1e293b;
+                border-color: #334155;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            }
+            .mobile-table tr:active { transform: scale(0.99); }
+
+            .mobile-table td {
+                display: block;
+                padding: 0.25rem 0;
+                border: none !important;
+                background: none !important;
+            }
+
+            .mobile-table td[data-label="Клиент"] {
+                padding-bottom: 0.75rem;
+                margin-bottom: 0.75rem;
+                border-bottom: 1px solid #f1f5f9 !important;
+            }
+            .dark .mobile-table td[data-label="Клиент"] {
+                border-color: #334155 !important;
+            }
+
+            .mobile-table td[data-label="Статус"] {
+                position: absolute;
+                top: 1.25rem;
+                right: 1.25rem;
+                padding: 0;
+            }
+
+            .mobile-table td[data-label="Действия"] {
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.75rem;
+                margin-top: 1rem;
+                padding-top: 1rem;
+                border-top: 1px solid #f1f5f9 !important;
+            }
+            .dark .mobile-table td[data-label="Действия"] {
+                border-color: #334155 !important;
+            }
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+
+        }
+
+        .dark select option {
+            background-color: #1e293b;
+            color: #f1f5f9;
+        }
+
+        body, nav, header, footer, section, main,
+        div, span, p, h1, h2, h3, h4, h5, h6,
+        button, input, textarea, select, a, i, label,
+        tr, td, th {
+            transition-property: background-color, border-color, color, fill, stroke, shadow, box-shadow;
+            transition-duration: 200ms;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .no-transition, .fa-solid, .fa-regular, .fa-brands {
+            transition-property: color, background-color;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col preload" onload="document.body.classList.remove('preload')">
+
+    <nav class="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-brand-500/30">
+                            <i class="fa-solid fa-briefcase"></i>
+                        </div>
+                        <span class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">Mini<span class="text-brand-600 dark:text-brand-400">CRM</span></span>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex items-center gap-3">
+                    <button id="themeToggle" onclick="toggleTheme()" class="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all focus:outline-none flex items-center justify-center relative overflow-hidden group">
+                        <i class="fa-solid fa-moon text-xl transition-transform duration-500 rotate-0 dark:rotate-180" id="themeIcon"></i>
+                    </button>
+
+                    <div class="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
+
+                    <button onclick="document.getElementById('importInput').click()" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <i class="fa-solid fa-file-import"></i> Импорт
+                    </button>
+                    <input type="file" id="importInput" accept=".csv" class="hidden" onchange="handleImport(event)">
+
+                    <button onclick="exportToCSV()" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <i class="fa-solid fa-file-export"></i> Экспорт
+                    </button>
+
+                    <button onclick="openModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md shadow-brand-500/20 transition-all hover:shadow-lg hover:shadow-brand-500/30 active:scale-95 flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Новая заявка</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center md:hidden gap-2">
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg text-slate-500 dark:text-slate-400">
+                         <i class="fa-solid fa-moon text-xl" id="themeIconMobile"></i>
+                    </button>
+                    <button onclick="toggleMobileMenu()" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        <i class="fa-solid fa-ellipsis-vertical text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobileMenu" class="hidden md:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden transition-all duration-300">
+            <div class="px-4 py-3 space-y-2">
+                <button onclick="document.getElementById('importInput').click(); toggleMobileMenu()" class="w-full flex items-center gap-3 px-3 py-3 text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-lg transition-colors duration-200">
+                    <div class="w-8 h-8 rounded-full bg-brand-50 dark:bg-brand-900/40 flex items-center justify-center text-brand-600 dark:text-brand-400"><i class="fa-solid fa-file-import"></i></div>
+                    Импорт CSV
+                </button>
+                <button onclick="exportToCSV(); toggleMobileMenu()" class="w-full flex items-center gap-3 px-3 py-3 text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-lg transition-colors duration-200">
+                    <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-file-export"></i></div>
+                    Экспорт CSV
+                </button>
+                <button onclick="generateDemoData(); toggleMobileMenu()" class="w-full flex items-center gap-3 px-3 py-3 text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-lg transition-colors duration-200">
+                    <div class="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-400"><i class="fa-solid fa-database"></i></div>
+                    Демо данные
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+            <div onclick="filterByStatus('all')" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200 group active:scale-95">
+                <div class="mb-2 md:mb-0">
+                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">Всего</p>
+                    <p class="text-2xl font-bold text-slate-800 dark:text-white select-text" id="statTotal">0</p>
+                </div>
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:bg-brand-50 dark:group-hover:bg-brand-900/30 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                    <i class="fa-solid fa-list"></i>
+                </div>
+            </div>
+            <div onclick="filterByStatus('new')" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200 group active:scale-95">
+                <div class="mb-2 md:mb-0">
+                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Новые</p>
+                    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 select-text" id="statNew">0</p>
+                </div>
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+            </div>
+            <div onclick="filterByStatus('in_progress')" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200 group active:scale-95">
+                <div class="mb-2 md:mb-0">
+                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">В работе</p>
+                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 select-text" id="statProgress">0</p>
+                </div>
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-amber-50 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-amber-500 dark:text-amber-400 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-spinner"></i>
+                </div>
+            </div>
+            <div onclick="filterByStatus('done')" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200 group active:scale-95">
+                <div class="mb-2 md:mb-0">
+                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Завершены</p>
+                    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 select-text" id="statDone">0</p>
+                </div>
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-emerald-50 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-emerald-500 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-6 p-4 transition-colors duration-300">
+            <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div class="relative w-full md:w-96">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-search text-slate-400 dark:text-slate-500"></i>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Поиск..."
+                        class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg leading-5 bg-slate-50 dark:bg-slate-700/50 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-slate-900 dark:text-white transition-all select-text">
+                </div>
+
+                <div class="flex w-full md:w-auto gap-3 pb-2 md:pb-0 relative">
+                    <div class="relative w-full md:w-56 z-20" id="customDropdown">
+                        <select id="statusFilter" class="hidden">
+                            <option value="all">Все статусы</option>
+                            <option value="new">Новая</option>
+                            <option value="in_progress">В работе</option>
+                            <option value="done">Завершено</option>
+                            <option value="cancelled">Отменено</option>
+                        </select>
+
+                        <button id="dropdownTrigger" onclick="toggleDropdown()" class="w-full pl-3 pr-4 py-2 text-left bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all flex items-center justify-between group select-none shadow-sm">
+                            <span id="dropdownValue" class="truncate mr-2 text-sm font-medium">Все статусы</span>
+                            <i class="fa-solid fa-chevron-down text-xs text-slate-500 dark:text-slate-400 transition-transform duration-200" id="dropdownIcon"></i>
+                        </button>
+
+                        <div id="dropdownOptions" class="hidden absolute right-0 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden py-1 origin-top transform transition-all duration-200 opacity-0 scale-95 z-50">
+                            <div onclick="selectStatus('all', 'Все статусы')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="all">
+                                <span>Все статусы</span>
+                                <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-100 check-icon"></i>
+                            </div>
+                            <div onclick="selectStatus('new', 'Новая')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="new">
+                                <span>Новая</span>
+                                <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-0 check-icon"></i>
+                            </div>
+                            <div onclick="selectStatus('in_progress', 'В работе')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="in_progress">
+                                <span>В работе</span>
+                                <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-0 check-icon"></i>
+                            </div>
+                            <div onclick="selectStatus('done', 'Завершено')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="done">
+                                <span>Завершено</span>
+                                <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-0 check-icon"></i>
+                            </div>
+                            <div onclick="selectStatus('cancelled', 'Отменено')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="cancelled">
+                                <span>Отменено</span>
+                                <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-0 check-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 md:rounded-xl shadow-lg border-y md:border border-slate-200 dark:border-slate-700 overflow-hidden -mx-4 md:mx-0 transition-colors duration-300">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700 mobile-table">
+                    <thead class="bg-slate-50 dark:bg-slate-700/50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Клиент</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Телефон</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Статус</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Комментарий</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Дата</th>
+                            <th scope="col" class="relative px-6 py-3">
+                                <span class="sr-only">Действия</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="emptyState" class="hidden flex flex-col items-center justify-center py-12 text-center px-4">
+                <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 transition-colors">
+                    <i class="fa-regular fa-folder-open text-2xl text-slate-400 dark:text-slate-500"></i>
+                </div>
+                <h3 class="text-lg font-medium text-slate-900 dark:text-white">Список пуст</h3>
+                <p class="text-slate-500 dark:text-slate-400 mt-1 max-w-sm">Заявок пока нет. Добавьте новую заявку или импортируйте данные из CSV.</p>
+                <div class="flex flex-col sm:flex-row gap-3 mt-4 w-full sm:w-auto">
+                    <button onclick="openModal()" class="text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg font-medium text-sm shadow-md transition-colors w-full sm:w-auto">
+                        + Добавить заявку
+                    </button>
+                    <button onclick="generateDemoData()" class="text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-medium text-sm shadow-sm transition-colors w-full sm:w-auto">
+                        Загрузить демо-данные
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 mt-auto transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-slate-500 dark:text-slate-400">© 2026 MiniCRM. Open Source Project.</span>
+                </div>
+                <div class="flex items-center gap-6">
+                    <a href="https://github.com/qorexdev" target="_blank" class="group flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                        <i class="fa-brands fa-github text-xl group-hover:scale-110 transition-transform"></i>
+                        <span class="text-sm font-medium">GitHub</span>
+                    </a>
+                    <a href="https://t.me/qorexdev" target="_blank" class="group flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+                        <i class="fa-brands fa-telegram text-xl group-hover:scale-110 transition-transform"></i>
+                        <span class="text-sm font-medium">Telegram</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div id="leadModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+
+            <div class="fixed inset-0 bg-slate-900/75 dark:bg-black/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeModal()"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-middle bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-lg w-full ring-1 ring-black/5 dark:ring-white/10">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 transition-colors duration-300">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-0 sm:text-left w-full">
+                            <h3 class="text-xl leading-6 font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2" id="modalTitle">
+                                <span class="bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 w-8 h-8 rounded-full flex items-center justify-center text-sm"><i class="fa-solid fa-pen"></i></span>
+                                <span id="modalTitleText">Новая заявка</span>
+                            </h3>
+                            <form id="leadForm" onsubmit="handleFormSubmit(event)">
+                                <input type="hidden" id="leadId">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="leadName" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Имя клиента</label>
+                                        <input type="text" name="leadName" id="leadName" required class="focus:ring-brand-500 focus:border-brand-500 block w-full shadow-sm sm:text-sm border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 border bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 select-text transition-colors" placeholder="Иван Иванов">
+                                    </div>
+                                    <div>
+                                        <label for="leadPhone" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Телефон</label>
+                                        <input type="tel" name="leadPhone" id="leadPhone" required class="focus:ring-brand-500 focus:border-brand-500 block w-full shadow-sm sm:text-sm border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 border bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 select-text transition-colors" placeholder="+7 (999) 000-00-00">
+                                    </div>
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Статус</label>
+                                        <input type="hidden" id="leadStatus" name="leadStatus" value="new">
+
+                                        <div class="relative" id="modalStatusDropdown">
+                                            <button type="button" id="modalStatusTrigger" onclick="toggleModalDropdown()" class="w-full pl-3 pr-4 py-2 text-left bg-white dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all flex items-center justify-between group select-none shadow-sm">
+                                                <span id="modalStatusValue" class="truncate mr-2 text-sm">Новая</span>
+                                                <i class="fa-solid fa-chevron-down text-xs text-slate-500 dark:text-slate-400 transition-transform duration-200" id="modalStatusIcon"></i>
+                                            </button>
+
+                                            <div id="modalStatusOptions" class="hidden absolute left-0 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden py-1 origin-top transform transition-all duration-200 opacity-0 scale-95 z-50">
+                                                <div onclick="selectModalStatus('new', 'Новая')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="new">
+                                                    <span>Новая</span>
+                                                    <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-100 modal-check-icon"></i>
+                                                </div>
+                                                <div onclick="selectModalStatus('in_progress', 'В работе')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="in_progress">
+                                                    <span>В работе</span>
+                                                    <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-0 modal-check-icon"></i>
+                                                </div>
+                                                <div onclick="selectModalStatus('done', 'Завершено')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="done">
+                                                    <span>Завершено</span>
+                                                    <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-0 modal-check-icon"></i>
+                                                </div>
+                                                <div onclick="selectModalStatus('cancelled', 'Отменено')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-between text-sm" data-value="cancelled">
+                                                    <span>Отменено</span>
+                                                    <i class="fa-solid fa-check text-brand-600 dark:text-brand-400 opacity-0 modal-check-icon"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="leadComment" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Комментарий</label>
+                                        <textarea id="leadComment" name="leadComment" rows="3" class="focus:ring-brand-500 focus:border-brand-500 block w-full shadow-sm sm:text-sm border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 border bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 select-text transition-colors" placeholder="Детали заказа..."></textarea>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-700/30 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2 border-t border-slate-100 dark:border-slate-700 transition-colors">
+                    <button type="button" onclick="document.getElementById('leadForm').dispatchEvent(new Event('submit'))" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                        Сохранить
+                    </button>
+                    <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-700 text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button onclick="openModal()" class="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-full shadow-lg shadow-brand-600/40 flex items-center justify-center text-2xl z-40 transition-all duration-200 active:scale-90 hover:scale-105">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-24 z-50 flex items-center gap-3 px-6 py-3 rounded-full shadow-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 min-w-[300px] justify-center opacity-0" style="transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);">
+        <div id="toastIcon" class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <span id="toastMessage" class="font-medium text-slate-800 dark:text-white">Действие выполнено</span>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
