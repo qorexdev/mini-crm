@@ -632,3 +632,17 @@ function validateStatus(status) {
     const valid = ['new', 'in_progress', 'done', 'cancelled'];
     return valid.includes(status) ? status : 'new';
 }
+
+function printLeads() {
+    if (leads.length === 0) {
+        showToast('Нет данных для печати', 'info');
+        return;
+    }
+
+    const dateP = document.querySelector('#printHeader p');
+    if (dateP) {
+        dateP.textContent = 'Дата: ' + new Date().toLocaleDateString('ru-RU') + ' | Всего заявок: ' + leads.length;
+    }
+
+    window.print();
+}

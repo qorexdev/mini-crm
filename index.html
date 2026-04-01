@@ -162,6 +162,31 @@
         .no-transition, .fa-solid, .fa-regular, .fa-brands {
             transition-property: color, background-color;
         }
+
+        @media print {
+            body { background: white !important; color: black !important; }
+            nav, footer, #leadModal, #toast, .md\:hidden,
+            .grid.grid-cols-2.md\:grid-cols-4,
+            .bg-white.dark\:bg-slate-800.rounded-xl.shadow-sm.border.mb-6 { display: none !important; }
+            .mobile-table td[data-label="Действия"] button { display: none !important; }
+            main { padding: 0 !important; max-width: 100% !important; }
+            .mobile-table { border: none !important; box-shadow: none !important; border-collapse: collapse !important; }
+            .bg-white.dark\:bg-slate-800.md\:rounded-xl.shadow-lg { box-shadow: none !important; border: none !important; margin: 0 !important; overflow: visible !important; }
+            .overflow-x-auto { overflow: visible !important; }
+            .mobile-table thead { display: table-header-group !important; }
+            .mobile-table tbody { display: table-row-group !important; }
+            .mobile-table tr { display: table-row !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; }
+            .mobile-table td { display: table-cell !important; color: black !important; }
+            .mobile-table td[data-label="Действия"] { display: none !important; }
+            .mobile-table th { color: black !important; background: #f3f4f6 !important; }
+            .dark .mobile-table td, .dark .mobile-table th,
+            .dark .mobile-table tr, .dark .mobile-table { background: white !important; color: black !important; }
+            * { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+            #printHeader { display: block !important; }
+        }
+
+        #printHeader { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col preload" onload="document.body.classList.remove('preload')">
@@ -195,6 +220,10 @@
                         <i class="fa-solid fa-file-export"></i> Экспорт
                     </button>
 
+                    <button onclick="printLeads()" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <i class="fa-solid fa-print"></i> Печать
+                    </button>
+
                     <button onclick="openModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md shadow-brand-500/20 transition-all hover:shadow-lg hover:shadow-brand-500/30 active:scale-95 flex items-center gap-2">
                         <i class="fa-solid fa-plus"></i>
                         <span>Новая заявка</span>
@@ -222,6 +251,10 @@
                     <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-file-export"></i></div>
                     Экспорт CSV
                 </button>
+                <button onclick="printLeads(); toggleMobileMenu()" class="w-full flex items-center gap-3 px-3 py-3 text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-lg transition-colors duration-200">
+                    <div class="w-8 h-8 rounded-full bg-violet-50 dark:bg-violet-900/40 flex items-center justify-center text-violet-600 dark:text-violet-400"><i class="fa-solid fa-print"></i></div>
+                    Печать
+                </button>
                 <button onclick="generateDemoData(); toggleMobileMenu()" class="w-full flex items-center gap-3 px-3 py-3 text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-lg transition-colors duration-200">
                     <div class="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-400"><i class="fa-solid fa-database"></i></div>
                     Демо данные
@@ -231,6 +264,11 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div id="printHeader" style="margin-bottom: 20px;">
+            <h1 style="font-size: 22px; font-weight: bold; margin: 0;">MiniCRM — Заявки</h1>
+            <p style="font-size: 13px; color: #666; margin: 4px 0 0;"></p>
+        </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
             <div onclick="filterByStatus('all')" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200 group active:scale-95">
