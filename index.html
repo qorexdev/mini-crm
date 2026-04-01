@@ -113,6 +113,13 @@
                 border-color: #334155 !important;
             }
 
+            .mobile-table td[data-label="Email"]::before {
+                content: 'Email: ';
+                font-weight: 600;
+                color: #64748b;
+                margin-right: 0.5rem;
+            }
+
             .mobile-table td[data-label="Статус"] {
                 position: absolute;
                 top: 1.25rem;
@@ -270,7 +277,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i class="fa-solid fa-search text-slate-400 dark:text-slate-500"></i>
                     </div>
-                    <input type="text" id="searchInput" placeholder="Поиск..."
+                    <input type="text" id="searchInput" placeholder="Поиск по имени, email, телефону..."
                         class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg leading-5 bg-slate-50 dark:bg-slate-700/50 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-slate-900 dark:text-white transition-all select-text">
                 </div>
 
@@ -322,6 +329,7 @@
                     <thead class="bg-slate-50 dark:bg-slate-700/50">
                         <tr>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Клиент</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Телефон</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Статус</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Комментарий</th>
@@ -395,6 +403,10 @@
                                     <div>
                                         <label for="leadName" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Имя клиента</label>
                                         <input type="text" name="leadName" id="leadName" required class="focus:ring-brand-500 focus:border-brand-500 block w-full shadow-sm sm:text-sm border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 border bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 select-text transition-colors" placeholder="Иван Иванов">
+                                    </div>
+                                    <div>
+                                        <label for="leadEmail" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                                        <input type="email" name="leadEmail" id="leadEmail" class="focus:ring-brand-500 focus:border-brand-500 block w-full shadow-sm sm:text-sm border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 border bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 select-text transition-colors" placeholder="client@example.com">
                                     </div>
                                     <div>
                                         <label for="leadPhone" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Телефон</label>

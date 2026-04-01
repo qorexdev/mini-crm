@@ -133,6 +133,7 @@ function renderLeads(arg) {
     const filteredLeads = leads.filter(lead => {
         const matchesSearch =
             lead.name.toLowerCase().includes(searchTerm) ||
+            (lead.email || '').toLowerCase().includes(searchTerm) ||
             lead.phone.toLowerCase().includes(searchTerm) ||
             lead.comment.toLowerCase().includes(searchTerm);
 
@@ -179,6 +180,11 @@ function renderLeads(arg) {
                     </div>
                 </div>
             </td>
+            <td class="px-6 py-4 whitespace-nowrap" data-label="Email">
+                <div class="text-sm text-slate-600 dark:text-slate-300 select-text">
+                    ${lead.email ? `<a href="mailto:${escapeHtml(lead.email)}" class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline transition-colors">${escapeHtml(lead.email)}</a>` : '<span class="text-slate-400 dark:text-slate-500">—</span>'}
+                </div>
+            </td>
             <td class="px-6 py-4 whitespace-nowrap" data-label="Телефон">
                 <div class="text-sm text-slate-600 dark:text-slate-300 font-mono select-text">
                     <a href="tel:${escapeHtml(lead.phone)}" class="hover:text-brand-600 dark:hover:text-brand-400 hover:underline transition-colors">
@@ -222,6 +228,7 @@ function openModal(leadId = null) {
         if (!lead) return;
         document.getElementById('leadId').value = lead.id;
         document.getElementById('leadName').value = lead.name;
+        document.getElementById('leadEmail').value = lead.email || '';
         document.getElementById('leadPhone').value = lead.phone;
         document.getElementById('leadStatus').value = lead.status;
         initialStatus = lead.status;
@@ -229,6 +236,7 @@ function openModal(leadId = null) {
     } else {
         form.reset();
         document.getElementById('leadId').value = '';
+        document.getElementById('leadEmail').value = '';
         document.getElementById('leadStatus').value = 'new';
         initialStatus = 'new';
     }
@@ -290,6 +298,7 @@ function handleFormSubmit(event) {
 
     const idStr = document.getElementById('leadId').value;
     const name = document.getElementById('leadName').value;
+    const email = document.getElementById('leadEmail').value;
     const phone = document.getElementById('leadPhone').value;
     const status = document.getElementById('leadStatus').value;
     const comment = document.getElementById('leadComment').value;
@@ -299,7 +308,7 @@ function handleFormSubmit(event) {
         const id = parseInt(idStr);
         const index = leads.findIndex(l => l.id === id);
         if (index !== -1) {
-            leads[index] = { ...leads[index], name, phone, status, comment };
+            leads[index] = { ...leads[index], name, email, phone, status, comment };
             showToast('Заявка обновлена');
             saveLeads(id);
         } else {
@@ -310,6 +319,7 @@ function handleFormSubmit(event) {
         const newLead = {
             id: Date.now(),
             name,
+            email,
             phone,
             status,
             comment,
@@ -472,13 +482,14 @@ function exportToCSV() {
         return;
     }
 
-    const headers = ['ID', 'Name', 'Phone', 'Status', 'Comment', 'Date'];
+    const headers = ['ID', 'Name', 'Email', 'Phone', 'Status', 'Comment', 'Date'];
     const csvRows = [headers.join(',')];
 
     leads.forEach(lead => {
         const row = [
             lead.id,
             `"${(lead.name || '').replace(/"/g, '""')}"`,
+            `"${(lead.email || '').replace(/"/g, '""')}"`,
             `"${(lead.phone || '').replace(/"/g, '""')}"`,
             lead.status,
             `"${(lead.comment || '').replace(/"/g, '""')}"`,
@@ -519,10 +530,11 @@ function handleImport(event) {
                     const newLead = {
                         id: Date.now() + i,
                         name: cols[1]?.replace(/^"|"$/g, '') || 'Без имени',
-                        phone: cols[2]?.replace(/^"|"$/g, '') || '',
-                        status: validateStatus(cols[3]) || 'new',
-                        comment: cols[4]?.replace(/^"|"$/g, '') || '',
-                        date: cols[5] || new Date().toISOString()
+                        email: cols[2]?.replace(/^"|"$/g, '') || '',
+                        phone: cols[3]?.replace(/^"|"$/g, '') || '',
+                        status: validateStatus(cols[4]) || 'new',
+                        comment: cols[5]?.replace(/^"|"$/g, '') || '',
+                        date: cols[6] || new Date().toISOString()
                     };
                     leads.push(newLead);
                     count++;
@@ -545,11 +557,11 @@ function generateDemoData() {
     }
 
     const demoLeads = [
-        { name: 'Александр Петров', phone: '+7 (900) 123-45-67', status: 'new', comment: 'Интересуется тарифом "Бизнес"', date: new Date(Date.now() - 10000000).toISOString() },
-        { name: 'Мария Сидорова', phone: '+7 (900) 987-65-43', status: 'in_progress', comment: 'Ждет КП на почту, перезвонить в среду', date: new Date(Date.now() - 50000000).toISOString() },
-        { name: 'ООО "Вектор"', phone: '+7 (495) 000-00-00', status: 'done', comment: 'Оплатили счет №452', date: new Date(Date.now() - 100000000).toISOString() },
-        { name: 'Дмитрий Козлов', phone: '+7 (999) 111-22-33', status: 'cancelled', comment: 'Передумали, дорого', date: new Date(Date.now() - 20000000).toISOString() },
-        { name: 'Елена Новикова', phone: '+7 (900) 555-55-55', status: 'new', comment: 'Заявка с сайта', date: new Date().toISOString() }
+        { name: 'Александр Петров', email: 'a.petrov@mail.ru', phone: '+7 (900) 123-45-67', status: 'new', comment: 'Интересуется тарифом "Бизнес"', date: new Date(Date.now() - 10000000).toISOString() },
+        { name: 'Мария Сидорова', email: 'maria.s@gmail.com', phone: '+7 (900) 987-65-43', status: 'in_progress', comment: 'Ждет КП на почту, перезвонить в среду', date: new Date(Date.now() - 50000000).toISOString() },
+        { name: 'ООО "Вектор"', email: 'info@vektor.ru', phone: '+7 (495) 000-00-00', status: 'done', comment: 'Оплатили счет №452', date: new Date(Date.now() - 100000000).toISOString() },
+        { name: 'Дмитрий Козлов', email: '', phone: '+7 (999) 111-22-33', status: 'cancelled', comment: 'Передумали, дорого', date: new Date(Date.now() - 20000000).toISOString() },
+        { name: 'Елена Новикова', email: 'lena.n@yandex.ru', phone: '+7 (900) 555-55-55', status: 'new', comment: 'Заявка с сайта', date: new Date().toISOString() }
     ];
 
     demoLeads.forEach((l, index) => {
