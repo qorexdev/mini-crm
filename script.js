@@ -1,5 +1,6 @@
 let leads = JSON.parse(localStorage.getItem('mini-crm-leads')) || [];
 let isDarkMode = localStorage.getItem('mini-crm-dark-mode') === 'true';
+let sortConfig = { key: 'date', dir: 'desc' };
 
 const STATUS_LABELS = {
     'new': { text: 'Новая', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' },
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     renderLeads();
     updateStats();
+    updateSortIcons();
 
     searchInput.addEventListener('input', renderLeads);
     statusFilter.addEventListener('change', renderLeads);
@@ -125,6 +127,34 @@ function updateStats() {
     document.getElementById('statDone').textContent = leads.filter(l => l.status === 'done').length;
 }
 
+function setSortBy(key) {
+    if (sortConfig.key === key) {
+        sortConfig.dir = sortConfig.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortConfig.key = key;
+        sortConfig.dir = key === 'date' ? 'desc' : 'asc';
+    }
+    updateSortIcons();
+    renderLeads();
+}
+
+function updateSortIcons() {
+    document.querySelectorAll('[data-sort]').forEach(th => {
+        const key = th.dataset.sort;
+        const icon = th.querySelector('.sort-icon');
+        if (!icon) return;
+        if (sortConfig.key === key) {
+            icon.textContent = sortConfig.dir === 'asc' ? ' ↑' : ' ↓';
+            th.classList.add('text-brand-600', 'dark:text-brand-400');
+            th.classList.remove('text-slate-500', 'dark:text-slate-400');
+        } else {
+            icon.textContent = ' ↕';
+            th.classList.remove('text-brand-600', 'dark:text-brand-400');
+            th.classList.add('text-slate-500', 'dark:text-slate-400');
+        }
+    });
+}
+
 function renderLeads(arg) {
     const highlightId = (typeof arg === 'number') ? arg : null;
     const searchTerm = searchInput.value.toLowerCase();
@@ -140,7 +170,20 @@ function renderLeads(arg) {
         const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
 
         return matchesSearch && matchesStatus;
-    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }).sort((a, b) => {
+        let va = a[sortConfig.key], vb = b[sortConfig.key];
+        if (sortConfig.key === 'date') {
+            va = new Date(va); vb = new Date(vb);
+        } else if (sortConfig.key === 'status') {
+            const order = { new: 0, in_progress: 1, done: 2, cancelled: 3 };
+            va = order[va] ?? 99; vb = order[vb] ?? 99;
+        } else {
+            va = (va || '').toLowerCase(); vb = (vb || '').toLowerCase();
+        }
+        if (va < vb) return sortConfig.dir === 'asc' ? -1 : 1;
+        if (va > vb) return sortConfig.dir === 'asc' ? 1 : -1;
+        return 0;
+    });
 
     tableBody.innerHTML = '';
 
